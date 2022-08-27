@@ -1,1 +1,1 @@
-web: gunicorn main:app
+web: gunicorn main:app -b :8080 --timeout 500 --workers=30 --threads=300 --worker-connections=1000
