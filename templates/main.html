@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Main page{% endblock title %}
+
+{% block content %}
+
+    <h2>Пользователь: {{ data['user_login'] }} | <a href="?user=logout">выйти</a></h2>
+
+    <form method="post">
+        <input type="submit" name="action" value="Обновить">
+        <p><b>Время ожидания ~ {{ data['estimate_time'] }} секунд</b></p>
+    </form>
+     
+    <h3><a href="?sort=price_up">Цена по возрастанию</a> | <a href="?sort=price_down">Цена по убыванию</a> | <a href="?data=clear">Очистить</a></h3>
+    
+    <br>
+    
+    {% if data['advertisements'] | length > 0 %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Цена (грн)</th>
+                    {% if data['user_access_level'] > 1 %}
+                        <th>Фото</th>
+                    {% endif %}
+                    {% if data['user_access_level'] > 2 %}
+                        <th>Имя продавца</th>
+                    {% endif %}
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for adv in data['advertisements'] %}
+                    <tr>
+                        <form method="post">
+                            <input type="hidden" name="id" value="{{ adv.id }}">
+
+                            <td class="title">
+                                <input type="text" name="title" value="{{ adv.title }}" readonly>
+                            </td>
+
+                            <td class="price">
+                                <input type="text" name="price" value="{{ adv.price }}" readonly>
+                            </td>
+
+                            {% if data['user_access_level'] > 1 %}
+                                <td class="photo">
+                                    <a href="{{adv.photo}}" target="_blank">
+                                        <img src="{{adv.photo}}" height="100">
+                                    </a>
+                                </td>
+                            {% endif %}
+
+                            {% if data['user_access_level'] > 2 %}
+                                <td class="seller_name">
+                                    <input type="text" name="seller" value="{{adv.seller_name}}" readonly>
+                                </td>
+                            {% endif %}
+
+                            <td>
+                                <input type="submit" name="action" value="Удалить">
+                            </td>
+                        </form>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+{% endblock content %}

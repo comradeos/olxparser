@@ -1,0 +1,1 @@
+Python (Flask, SQLAlchemy, BeautifulSoup, threading, requests) advertisements data parser.
