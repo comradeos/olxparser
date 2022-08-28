@@ -53,54 +53,41 @@ HEADERS = {
 
 
 
-
-def get_advertisements_data(results:list, parsed_advertise:list):
+def collect_adv_links(item:BeautifulSoup, uah_price:int, adv_urls_list:list):
     try:
-        adv_url = HOST + parsed_advertise.find('a', class_='css-1bbgabe').get('href')
-        adv_html = requests.get(url=adv_url, headers=HEADERS).text
-        adv_parsed = BeautifulSoup(adv_html, 'html.parser')
-        adv_author = adv_parsed.find('h4', class_='css-1rbjef7-Text eu5v0x0').get_text()
-        adv_image = adv_parsed.find('img', class_='css-1bmvjcs').get('src')
-        results.append(
-            {
-                'title': parsed_advertise.find('h6', class_='css-v3vynn-Text eu5v0x0').get_text(),
-                'url': HOST + parsed_advertise.find('a', class_='css-1bbgabe').get('href'),
-                'author': adv_author,
-                'price': int(parsed_advertise.find('p', class_='css-wpfvmn-Text eu5v0x0').
-                            get_text().replace('грн.', '').replace(' ','')),
-                'image': adv_image,
-            }
-        )
+        href = HOST + item.find('a', class_='css-1bbgabe').get('href')
+        if not href in adv_urls_list:
+            adv_urls_list.append(
+                {
+                    'url': href,
+                    'uah_price': uah_price,
+                }
+            )
     except:
         pass
 
 
-
-
-def get_advertisements_list(goal):
-    result = []
-    page = 1
-    while len(result) < goal:
-        url = 'https://www.olx.ua/d/uk/nedvizhimost/?page=' + str(page)
-        html = requests.get(url=url, headers=HEADERS).text
-        soup = BeautifulSoup(html, 'html.parser')
-        items = soup.find_all('div', class_='css-19ucd76')
+def collect_adv_data(adv:str):
+    try:
+        adv_html = requests.get(url=adv['url'], headers=HEADERS).text
+        adv_parsed = BeautifulSoup(adv_html, 'html.parser')
         
-        threads = []
+        adv_title = adv_parsed.find('h1', class_='css-r9zjja-Text eu5v0x0').get_text()
+        adv_author = adv_parsed.find('h4', class_='css-1rbjef7-Text eu5v0x0').get_text()
+        adv_image = adv_parsed.find('img', class_='css-1bmvjcs').get('src')
+        adv_price = adv['uah_price']
         
-        for item in items:
-            thread = threading.Thread(target=get_advertisements_data, args=[result, item])
-            thread.start()
-            threads.append(thread)
-
-        for thread in threads:
-            thread.join()
-            
-        page += 1
+        try:
+            new_item = Advertisements(title=adv_title, price=adv_price,
+                                      photo=adv_image, seller_name=adv_author)
+            if Advertisements.query.filter_by(photo=new_item.photo).count() == 0:
+                db.session.add(new_item)
+                db.session.commit()
+        except:
+            pass
+    except:
+        pass
     
-    return result
-
-
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -112,37 +99,21 @@ def index():
     
     user = Users.query.get(user_id)
     
+    if user.access_level == 1:
+        goal = 100
+    elif user.access_level == 2:
+        goal = 200
+    elif user.access_level == 3:
+        goal = 300
+    else:
+        goal = 0
+    
     if request.args.get('user') == 'logout':
         del session['user_id']
         return redirect(url_for('login'))
     
     if request.method == 'POST':
-        if request.form['action'] == "Обновить":
-            
-            if user.access_level == 1:
-                advertisements = get_advertisements_list(150)
-            elif user.access_level == 2:
-                advertisements = get_advertisements_list(250)
-            elif user.access_level == 3:
-                advertisements = get_advertisements_list(350)
-            else:
-               print('error')
-                
-            for adv in advertisements:
-                try:
-                    new_item = Advertisements(title=adv['title'], price=adv['price'], 
-                                          photo=adv['image'], seller_name=adv['author'])
-                    try:
-                        duplicate = Advertisements.query.filter_by(photo=adv['image']).one()
-                    except:
-                        duplicate = None
-                    if not duplicate:
-                        db.session.add(new_item)
-                        db.session.commit()
-                except:
-                    print('error')
-                    pass
-            
+        
         if request.form['action'] == "Удалить":
             try:
                 item = Advertisements.query.get(request.form['id'])
@@ -150,22 +121,51 @@ def index():
                 db.session.commit()
             except:
                 pass
-    
-    if user.access_level == 1:
-        advertisements = Advertisements.query.order_by(Advertisements.id.desc()).limit(100).all()
-        estimate_time = 15
-        
-    elif user.access_level == 2:
-        advertisements = Advertisements.query.order_by(Advertisements.id.desc()).limit(200).all()
-        estimate_time = 25
-        
-    elif user.access_level == 3:
-        advertisements = Advertisements.query.order_by(Advertisements.id.desc()).limit(300).all()
-        estimate_time = 35
-        
-    else:
-        advertisements = []
-        estimate_time = 0
+            
+        if request.form['action'] == "Обновить":
+            
+            page = 1
+            adv_urls_list =[]
+            
+            while len(adv_urls_list) < goal:
+                url = 'https://www.olx.ua/d/uk/hobbi-otdyh-i-sport/muzykalnye-instrumenty/?page=' + str(page)
+                html = requests.get(url=url, headers=HEADERS).text
+                soup = BeautifulSoup(html, 'html.parser')
+                items = soup.find_all('div', class_='css-19ucd76')
+                
+                threads_items = []
+                for item in items:
+                    try:
+                        price = int(item.find('p', class_='css-wpfvmn-Text eu5v0x0').
+                                    get_text().replace('грн.', '').replace(' ',''))
+                    except:
+                        price = None
+                    if price:
+                        thread = threading.Thread(target=collect_adv_links, args=[item, price, adv_urls_list])
+                        threads_items.append(thread)
+                        thread.start()
+                for thread in threads_items:
+                    thread.join()
+                    
+                page += 1
+            
+            with open('links.txt', 'w') as file:
+                for i in adv_urls_list:
+                    file.write("%s\n" % i)
+                print('Done')
+            
+            threads_adv = []
+            for adv_url in adv_urls_list:
+                thread = threading.Thread(target=collect_adv_data, args=[adv_url])
+                threads_items.append(thread)
+                thread.start()
+            for thread in threads_adv:
+                    thread.join()
+            
+            return redirect(url_for('index'))
+
+
+    advertisements = Advertisements.query.order_by(Advertisements.id.desc()).limit(goal).all()
     
     if request.args.get('sort') == 'price_down':
         advertisements.sort(key=lambda x: x.price, reverse=True)
@@ -185,7 +185,7 @@ def index():
         'user_login': Users.query.get(user_id).login,
         'user_access_level': Users.query.get(user_id).access_level,
         'advertisements': advertisements,
-        'estimate_time': estimate_time,
+        'estimate_time': 'unknown',
     }
     
     return render_template('main.html', data=data)
