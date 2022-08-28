@@ -48,6 +48,12 @@ HEADERS = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
 }
 
+import time
+def bg_task():
+    while True:
+        print('bg_task...')
+        time.sleep(1)
+
 
 def collect_adv_data(adv:str):
     '''Сбор данных объявления
@@ -90,6 +96,33 @@ def crawl_adv_links(item:BeautifulSoup, uah_price:int, adv_urls_list:list):
 
 
 
+def parse_olx_data(goal):
+    page = 1
+    adv_urls_list =[]
+    while len(adv_urls_list) < goal:
+        url = 'https://www.olx.ua/d/uk/hobbi-otdyh-i-sport/muzykalnye-instrumenty/?page=' + str(page)
+        html = requests.get(url=url, headers=HEADERS).text
+        soup = BeautifulSoup(html, 'html.parser')
+        items = soup.find_all('div', class_='css-19ucd76')
+        
+        threads_items = []
+        for item in items:
+            try:
+                price = int(item.find('p', class_='css-wpfvmn-Text eu5v0x0').
+                            get_text().replace('грн.', '').replace(' ',''))
+            except:
+                price = None
+            if price:
+                thread = threading.Thread(target=crawl_adv_links, args=[item, price, adv_urls_list], daemon=True)
+                threads_items.append(thread)
+                thread.start()
+        for thread in threads_items:
+            thread.join()
+            
+        page += 1
+
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     try:
@@ -126,32 +159,9 @@ def index():
                 pass
             
         if request.form['action'] == "Обновить":
-            
-            page = 1
-            adv_urls_list =[]
-            
-            while len(adv_urls_list) < goal:
-                url = 'https://www.olx.ua/d/uk/hobbi-otdyh-i-sport/muzykalnye-instrumenty/?page=' + str(page)
-                html = requests.get(url=url, headers=HEADERS).text
-                soup = BeautifulSoup(html, 'html.parser')
-                items = soup.find_all('div', class_='css-19ucd76')
-                
-                threads_items = []
-                for item in items:
-                    try:
-                        price = int(item.find('p', class_='css-wpfvmn-Text eu5v0x0').
-                                    get_text().replace('грн.', '').replace(' ',''))
-                    except:
-                        price = None
-                    if price:
-                        thread = threading.Thread(target=crawl_adv_links, args=[item, price, adv_urls_list], daemon=True)
-                        threads_items.append(thread)
-                        thread.start()
-                for thread in threads_items:
-                    thread.join()
-                    
-                page += 1
-            
+            thread = threading.Thread(target=parse_olx_data, args=[goal], daemon=True)
+            thread.start()
+            time.sleep(3)
             return redirect(url_for('index'))
 
 
