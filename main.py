@@ -2,8 +2,9 @@ from flask import Flask, render_template, url_for, redirect, request, session
 from flask_sqlalchemy import SQLAlchemy
 from bs4 import BeautifulSoup
 from threading import Thread
-import requests
 from time import sleep
+import requests
+
 
 # приложение, настройки, база данных
 app = Flask(__name__)
@@ -87,6 +88,8 @@ def crawl_adv_links(item:BeautifulSoup, uah_price:int, adv_urls_list:list):
 
 
 def parse_olx_data(goal):
+    '''Основной фоновый процесс сбора данных и записи в базу
+    '''
     page = 1
     adv_urls_list =[]
     while len(adv_urls_list) < goal:
