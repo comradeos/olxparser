@@ -5,22 +5,20 @@ import threading
 import requests
 
 
-
-
+# приложение и настройки
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'MY_SECRET_KEY'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 
 
-
-
+# соединение с базой
 db = SQLAlchemy(app)
 
 
-
-
 class Users(db.Model):
+    '''Модель пользователя
+    '''
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(255), nullable=False)
@@ -30,9 +28,9 @@ class Users(db.Model):
         return f'Users: {self.id}, {self.login}, {self.password}'
 
 
-
-
 class Advertisements(db.Model):
+    '''Модель объявления
+    '''
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
@@ -44,7 +42,6 @@ class Advertisements(db.Model):
 
 
 
-
 HOST = 'https://www.olx.ua'
 HEADERS = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
@@ -52,9 +49,9 @@ HEADERS = {
 }
 
 
-
-
 def collect_adv_data(adv:str):
+    '''Сбор данных объявления
+    '''
     try:
         adv_html = requests.get(url=adv['url'], headers=HEADERS).text
         adv_parsed = BeautifulSoup(adv_html, 'html.parser')
@@ -76,6 +73,8 @@ def collect_adv_data(adv:str):
 
 
 def crawl_adv_links(item:BeautifulSoup, uah_price:int, adv_urls_list:list):
+    '''Сбор данных и запись в базу
+    '''
     try:
         href = HOST + item.find('a', class_='css-1bbgabe').get('href')
         if not href in adv_urls_list:
@@ -102,10 +101,13 @@ def index():
     
     if user.access_level == 1:
         goal = 100
+        estimate_time = 10
     elif user.access_level == 2:
         goal = 200
+        estimate_time = 20
     elif user.access_level == 3:
         goal = 300
+        estimate_time = 30
     else:
         goal = 0
     
@@ -173,11 +175,10 @@ def index():
         'user_login': Users.query.get(user_id).login,
         'user_access_level': Users.query.get(user_id).access_level,
         'advertisements': advertisements,
-        'estimate_time': 'unknown',
+        'estimate_time': estimate_time,
     }
     
     return render_template('main.html', data=data)
-
 
 
 
@@ -193,7 +194,6 @@ def login():
         except:
             return render_template('login.html')
     return render_template('login.html')
-
 
 
 
