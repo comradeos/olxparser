@@ -1,18 +1,15 @@
 from flask import Flask, render_template, url_for, redirect, request, session
 from flask_sqlalchemy import SQLAlchemy
 from bs4 import BeautifulSoup
-import threading
+from threading import Thread
 import requests
+from time import sleep
 
-
-# приложение и настройки
+# приложение, настройки, база данных
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'MY_SECRET_KEY'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
-
-
-# соединение с базой
 db = SQLAlchemy(app)
 
 
@@ -41,18 +38,11 @@ class Advertisements(db.Model):
         return f'Users: {self.id}, {self.title}, {self.price}'
 
 
-
 HOST = 'https://www.olx.ua'
 HEADERS = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36',
 }
-
-import time
-def bg_task():
-    while True:
-        print('bg_task...')
-        time.sleep(1)
 
 
 def collect_adv_data(adv:str):
@@ -113,7 +103,7 @@ def parse_olx_data(goal):
             except:
                 price = None
             if price:
-                thread = threading.Thread(target=crawl_adv_links, args=[item, price, adv_urls_list], daemon=True)
+                thread = Thread(target=crawl_adv_links, args=[item, price, adv_urls_list], daemon=True)
                 threads_items.append(thread)
                 thread.start()
         for thread in threads_items:
@@ -159,9 +149,9 @@ def index():
                 pass
             
         if request.form['action'] == "Обновить":
-            thread = threading.Thread(target=parse_olx_data, args=[goal], daemon=True)
+            thread = Thread(target=parse_olx_data, args=[goal], daemon=True)
             thread.start()
-            time.sleep(3)
+            sleep(3)
             return redirect(url_for('index'))
 
 

@@ -10,12 +10,11 @@
         <p><b>Время ожидания ~ {{ data['estimate_time'] }} секунд</b></p>
     </form>
 
-    
-    {% if data['advertisements'] | length > 0 %}
-    
-        <h3><a href="?sort=price_up">Цена по возрастанию</a> | <a href="?sort=price_down">Цена по убыванию</a> | <a href="?data=clear">Очистить</a></h3>
+    <h3><a href="/">Обновить результаты</a> | <a href="?sort=price_up">Цена по возрастанию</a> | <a href="?sort=price_down">Цена по убыванию</a> | <a href="?data=clear">Очистить</a></h3>
         
-        <br>
+    <br>
+
+    {% if data['advertisements'] | length > 0 %}
 
         <table>
             <thead>
