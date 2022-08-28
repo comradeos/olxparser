@@ -53,19 +53,6 @@ HEADERS = {
 
 
 
-def collect_adv_links(item:BeautifulSoup, uah_price:int, adv_urls_list:list):
-    try:
-        href = HOST + item.find('a', class_='css-1bbgabe').get('href')
-        if not href in adv_urls_list:
-            adv_urls_list.append(
-                {
-                    'url': href,
-                    'uah_price': uah_price,
-                }
-            )
-    except:
-        pass
-
 
 def collect_adv_data(adv:str):
     try:
@@ -77,17 +64,31 @@ def collect_adv_data(adv:str):
         adv_image = adv_parsed.find('img', class_='css-1bmvjcs').get('src')
         adv_price = adv['uah_price']
         
-        try:
-            new_item = Advertisements(title=adv_title, price=adv_price,
-                                      photo=adv_image, seller_name=adv_author)
-            if Advertisements.query.filter_by(photo=new_item.photo).count() == 0:
-                db.session.add(new_item)
-                db.session.commit()
-        except:
-            pass
+        new_item = Advertisements(title=adv_title, price=adv_price,
+                                    photo=adv_image, seller_name=adv_author)
+        if Advertisements.query.filter_by(photo=new_item.photo).count() == 0:
+            db.session.add(new_item)
+            db.session.commit()
     except:
+        print('>>> error: collect_adv_data')
         pass
     
+
+
+def crawl_adv_links(item:BeautifulSoup, uah_price:int, adv_urls_list:list):
+    try:
+        href = HOST + item.find('a', class_='css-1bbgabe').get('href')
+        if not href in adv_urls_list:
+            url_data = {
+                'url': href,
+                'uah_price': uah_price,
+            }
+            adv_urls_list.append(url_data)
+            collect_adv_data(url_data)
+    except:
+        print('>>> error: collect_adv_links')
+        pass
+
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -141,26 +142,13 @@ def index():
                     except:
                         price = None
                     if price:
-                        thread = threading.Thread(target=collect_adv_links, args=[item, price, adv_urls_list])
+                        thread = threading.Thread(target=crawl_adv_links, args=[item, price, adv_urls_list], daemon=True)
                         threads_items.append(thread)
                         thread.start()
                 for thread in threads_items:
                     thread.join()
                     
                 page += 1
-            
-            with open('links.txt', 'w') as file:
-                for i in adv_urls_list:
-                    file.write("%s\n" % i)
-                print('Done')
-            
-            threads_adv = []
-            for adv_url in adv_urls_list:
-                thread = threading.Thread(target=collect_adv_data, args=[adv_url])
-                threads_items.append(thread)
-                thread.start()
-            for thread in threads_adv:
-                    thread.join()
             
             return redirect(url_for('index'))
 
