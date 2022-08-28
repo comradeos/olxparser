@@ -7,10 +7,18 @@
 
     <form method="post">
         <input type="submit" name="action" value="Обновить">
-        <p><b>Время ожидания ~ {{ data['estimate_time'] }} секунд</b></p>
+        <p><b>Время ожидания ~ {{ data['estimate_time'] }} секунд</b><br>
+        Для обновления результатов используйте ссылку ниже.
+        </p>
     </form>
 
-    <h3><a href="/">Обновить результаты</a> | <a href="?sort=price_up">Цена по возрастанию</a> | <a href="?sort=price_down">Цена по убыванию</a> | <a href="?data=clear">Очистить</a></h3>
+    <h3><a href="/">Обновить результаты</a>
+        {% if data['advertisements'] | length > 0 %} | 
+            <a href="?sort=price_up">Цена по возрастанию</a> | 
+            <a href="?sort=price_down">Цена по убыванию</a> | 
+            <a href="?data=clear">Очистить</a>
+        {% endif %}
+    </h3>
         
     <br>
 
