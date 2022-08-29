@@ -161,7 +161,7 @@ def index():
             return redirect(url_for('index'))
 
 
-    advertisements = Advertisements.query.order_by(Advertisements.id.desc()).limit(goal).all()
+    advertisements = Advertisements.query.order_by(Advertisements.id.asc()).limit(goal).all()
     
     if request.args.get('sort') == 'price_down':
         advertisements.sort(key=lambda x: x.price, reverse=True)

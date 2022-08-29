@@ -28,6 +28,7 @@
         <table>
             <thead>
                 <tr>
+                    <th>№</th>
                     <th>Название</th>
                     <th>Цена (грн)</th>
                     {% if data['user_access_level'] > 1 %}
@@ -43,7 +44,10 @@
                 {% for adv in data['advertisements'] %}
                     <tr>
                         <form method="post">
-                            <input type="hidden" name="id" value="{{ adv.id }}">
+
+                            <td class="id">
+                                <input type="text" name="id" value="{{ adv.id }}">
+                            </td>
 
                             <td class="title">
                                 <input type="text" name="title" value="{{ adv.title }}" readonly>
