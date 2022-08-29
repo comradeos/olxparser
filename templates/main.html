@@ -13,13 +13,7 @@
         </p>
     </form>
 
-    <h3><a href="/">Обновить результаты</a>
-        {% if data['advertisements'] | length > 0 %} | 
-            <a href="?sort=price_up">Цена по возрастанию</a> | 
-            <a href="?sort=price_down">Цена по убыванию</a> | 
-            <a href="?data=clear">Очистить</a>
-        {% endif %}
-    </h3>
+    <h3><a href="/">Обновить результаты</a> | <a href="?data=clear">Очистить</a></h3>
         
     <br>
 
@@ -30,7 +24,7 @@
                 <tr>
                     <th>№</th>
                     <th>Название</th>
-                    <th>Цена (грн)</th>
+                    <th>Цена (грн) | <a href="?sort=price_up">▲</a> <a href="?sort=price_down">▼</a></th>
                     {% if data['user_access_level'] > 1 %}
                         <th class="photo">Фото</th>
                     {% endif %}
